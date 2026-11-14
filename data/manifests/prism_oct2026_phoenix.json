@@ -1,0 +1,84 @@
+{
+  "source_file": "Datasets/a08.prism_ppt/prism_ppt_us_30s_202610.tif",
+  "source_provider": "PRISM Climate Group, Oregon State University",
+  "source_grid": "prism_ppt_us_30s_202610",
+  "variable": "monthly precipitation",
+  "period": "2026-10",
+  "dataset_version": "M3",
+  "release_number": 1,
+  "dataset_create_date": "20261101-0919",
+  "source_create_date": "20261101-0904",
+  "units": "mm",
+  "source_crs": "EPSG:4269",
+  "source_resolution_degrees": [
+    0.008333333333,
+    -0.008333333333
+  ],
+  "source_bounds": [
+    -125.02083333333351,
+    24.062500001034504,
+    -66.47916666900852,
+    49.9374999999995
+  ],
+  "source_nodata": -9999.0,
+  "study_rectangle_wgs84": [
+    -112.8,
+    33.2,
+    -111.35,
+    34.1
+  ],
+  "output_crs": "EPSG:4269",
+  "output_shape": [
+    108,
+    174
+  ],
+  "output_bounds": [
+    -112.80416666715551,
+    33.2041666673355,
+    -111.35416666721352,
+    34.1041666672995
+  ],
+  "display_corners_lonlat_nw_ne_se_sw": [
+    [
+      -112.80416666715551,
+      34.1041666672995
+    ],
+    [
+      -111.35416666721352,
+      34.1041666672995
+    ],
+    [
+      -111.35416666721352,
+      33.2041666673355
+    ],
+    [
+      -112.80416666715551,
+      33.2041666673355
+    ]
+  ],
+  "valid_cell_count": 18511,
+  "valid_fraction": 0.985046828437633,
+  "regional_mean_mm": 55.62749481201172,
+  "regional_min_mm": 4.093999862670898,
+  "regional_max_mm": 189.1739959716797,
+  "display_stretch": {
+    "type": "linear 2nd\u201398th percentile clip",
+    "minimum": 22.058999633789064,
+    "maximum": 142.4518035888672,
+    "input_units": "mm"
+  },
+  "outputs": {
+    "analysis_geotiff": "prism_oct2026_phoenix.tif",
+    "cog": "prism_oct2026_phoenix_cog.tif",
+    "quicklook_png": "prism_oct2026_quicklook.png"
+  },
+  "method": "Crop source pixels to the documented Phoenix rectangle; include only native grid-cell centers inside the rectangle in the valid-cell mean; no resampling or interpolation of source values.",
+  "vintage_note": "This PRISM monthly grid is a versioned release; monthly products are updated over the following six months before considered stable.",
+  "regional_mean_method": "Arithmetic mean of valid native PRISM grid-cell totals whose centers fall within the study rectangle; cells are not area-weighted.",
+  "limitations": [
+    "One monthly period only; not a rainfall time series.",
+    "Precipitation is context and does not prove aquifer recharge.",
+    "PRISM is a modeled gridded estimate."
+  ],
+  "created_utc": "2026-11-14T18:36:10.644423+00:00"
+}

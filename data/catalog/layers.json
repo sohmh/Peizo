@@ -1,0 +1,65 @@
+[
+  {
+    "id": "nisar-gcov",
+    "title": "NISAR GCOV radar covariance",
+    "type": "raster",
+    "available": false,
+    "status": "Frame 71 Frequency A HHHH/HVHV crops processed; other scenes/frequencies remain source-only",
+    "units": "unitless source terms",
+    "date": "2026-10-28",
+    "limitation": "Surface radar observation; not groundwater depth"
+  },
+  {
+    "id": "groundwater-stations",
+    "title": "USGS groundwater stations",
+    "type": "point",
+    "available": false,
+    "status": "USGS source observations are filtered and served by provider and measurement definition",
+    "limitation": "Point measurements represent station locations only"
+  },
+  {
+    "id": "adwr-gwsi-sites",
+    "title": "ADWR Groundwater Site Inventory wells",
+    "type": "point",
+    "available": true,
+    "status": "6,765 Phoenix rectangle inventory sites; 5,362 sites have 48,846 joined GWSI well-level records",
+    "crs": "EPSG:4326 display coordinates from DD_LAT/DD_LONG source fields",
+    "limitation": "GWSI water-level elevation datum unspecified; source/method/remark codes remain undecoded"
+  },
+  {
+    "id": "adwr-basin-context",
+    "title": "ADWR groundwater basins and subbasins",
+    "type": "polygon",
+    "available": true,
+    "status": "8 basins and 14 subbasins clipped to Phoenix study rectangle",
+    "crs": "CRS84 source; WGS84 display",
+    "limitation": "Regional administrative/geologic context, not local well measurements"
+  },
+  {
+    "id": "prism-rainfall",
+    "title": "PRISM precipitation",
+    "type": "raster",
+    "available": false,
+    "status": "October 2026 Phoenix crop and COG processed",
+    "units": "mm",
+    "date": "2026-10",
+    "limitation": "Rainfall context does not prove recharge"
+  },
+  {
+    "id": "grace-storage",
+    "title": "GRACE total water storage anomaly",
+    "type": "series",
+    "available": false,
+    "status": "261 monthly records, Phoenix mascon; native support remains coarse",
+    "units": "cm",
+    "limitation": "Native mascons approximately 3-degree support"
+  },
+  {
+    "id": "data-centres",
+    "title": "Source-backed data-centre records",
+    "type": "point",
+    "available": true,
+    "status": "six sourced directory records; one source-published point; records without verified coordinates omitted from map",
+    "limitation": "Facility proximity does not imply water source or causality"
+  }
+]

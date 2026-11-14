@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: piezo-api
+    runtime: python
+    plan: starter
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    disk:
+      name: piezo-derived-assets
+      mountPath: /var/data/piezo
+      sizeGB: 2
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.11
+      - key: PIEZO_DATA_ROOT
+        value: /opt/render/project/src/data
+      - key: PIEZO_PROCESSED_ROOT
+        value: /var/data/piezo/processed
+      - key: PIEZO_MANIFEST_ROOT
+        value: /opt/render/project/src/data/manifests
+      - key: PIEZO_CORS_ORIGINS
+        sync: false

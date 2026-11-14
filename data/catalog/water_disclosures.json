@@ -1,0 +1,21 @@
+[
+  {
+    "disclosure_id": "edged-phx-cooling-claim-01",
+    "facility_id": "phx-edged-mesa-01",
+    "scope": "site",
+    "reported_quantity": null,
+    "original_unit": null,
+    "derived_quantity": null,
+    "derived_unit": null,
+    "metric_type": "cooling_water_claim",
+    "water_source": "unspecified",
+    "actual_or_planned": "operator product statement; operating status not independently verified",
+    "direct_or_indirect": "direct cooling statement only",
+    "period_start": null,
+    "period_end": null,
+    "source_id": "edged-phx-spec-2024",
+    "page_section_table": "PDF pp. 1–2, claims no water for cooling; p. 2 gives comparative claimed water savings of 94,800,000 gallons/year against industry average",
+    "publication_date": "2024-07",
+    "interpretation_notes": "No site-specific withdrawal or consumption quantity is reported. The claimed water-savings figure is comparative and is not facility water consumption, so it is not stored as a reported quantity. Total facility water source and use remain unknown."
+  }
+]

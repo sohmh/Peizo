@@ -1,0 +1,172 @@
+[
+  {
+    "dataset_id": "nisar-gcov-frame71",
+    "kind": "nisar_gcov",
+    "scene_id": "frame71-20261028",
+    "title": "NISAR L2 GCOV Frame 71",
+    "provider": "NASA/JPL / ASF DAAC",
+    "source_file": "Datasets/NISAR_L2_PR_GCOV_034_056_D_071_4005_DHDH_A_20261028T021535_20261028T021610_P05036_N_F_J_001.h5",
+    "acquisition_start": "2026-10-28T02:15:35Z",
+    "acquisition_end": "2026-10-28T02:16:10.999342105Z",
+    "orbit": "descending",
+    "track": 56,
+    "frame": 71,
+    "product_version": "1.0.20",
+    "crid": "P05036",
+    "doi": "10.5067/NIL2GCOV-V1",
+    "crs": "EPSG:32612",
+    "shape": [
+      34632,
+      35136
+    ],
+    "pixel_spacing_m": [
+      10,
+      -10
+    ],
+    "channels": [
+      {
+        "term": "HHHH",
+        "frequency": "A",
+        "units": "1",
+        "status": "frame 71 Phoenix crop processed"
+      },
+      {
+        "term": "HVHV",
+        "frequency": "A",
+        "units": "1",
+        "status": "frame 71 Phoenix crop processed"
+      },
+      {
+        "term": "HHHH",
+        "frequency": "B",
+        "units": "1",
+        "status": "source present; derived raster pending"
+      },
+      {
+        "term": "HVHV",
+        "frequency": "B",
+        "units": "1",
+        "status": "source present; derived raster pending"
+      }
+    ],
+    "validation": "Source HDF5 metadata and Phoenix footprint verified; frame 71 Frequency A HHHH/HVHV crop, COG and quicklook produced."
+  },
+  {
+    "dataset_id": "nisar-gcov-frame72",
+    "kind": "nisar_gcov",
+    "scene_id": "frame72-20261028",
+    "title": "NISAR L2 GCOV Frame 72",
+    "provider": "NASA/JPL / ASF DAAC",
+    "source_file": "Datasets/NISAR_L2_PR_GCOV_034_056_D_072_4005_DHDH_A_20261028T021609_20261028T021644_P05036_N_F_J_001.h5",
+    "acquisition_start": "2026-10-28T02:16:09Z",
+    "acquisition_end": "2026-10-28T02:16:44.999342105Z",
+    "orbit": "descending",
+    "track": 56,
+    "frame": 72,
+    "product_version": "1.0.20",
+    "crid": "P05036",
+    "doi": "10.5067/NIL2GCOV-V1",
+    "crs": "EPSG:32612",
+    "shape": [
+      34632,
+      35136
+    ],
+    "pixel_spacing_m": [
+      10,
+      -10
+    ],
+    "channels": [
+      {
+        "term": "HHHH",
+        "frequency": "A",
+        "units": "1",
+        "status": "source available; frame 72 crop pending"
+      },
+      {
+        "term": "HVHV",
+        "frequency": "A",
+        "units": "1",
+        "status": "source available; frame 72 crop pending"
+      },
+      {
+        "term": "HHHH",
+        "frequency": "B",
+        "units": "1",
+        "status": "source present; derived raster pending"
+      },
+      {
+        "term": "HVHV",
+        "frequency": "B",
+        "units": "1",
+        "status": "source present; derived raster pending"
+      }
+    ],
+    "validation": "Source HDF5 metadata and Phoenix footprint verified; derived frame 72 map crop pending."
+  },
+  {
+    "dataset_id": "usgs-field-export",
+    "kind": "groundwater",
+    "title": "USGS field measurements and monitoring locations export",
+    "provider": "USGS; local export query provenance to recover",
+    "source_file": "Datasets/2026-11-14T11-47-59.452Z-download/",
+    "temporal_coverage": "1917–2026 in Arizona metadata rows",
+    "variables": [
+      "measurement value",
+      "parameter code/description",
+      "observation date",
+      "unit",
+      "vertical datum",
+      "site coordinates"
+    ],
+    "validation": "13,323 observations from 507 station IDs filtered to documented Phoenix rectangle; source query provenance absent."
+  },
+  {
+    "dataset_id": "adwr-gwsi",
+    "kind": "groundwater",
+    "title": "Arizona Groundwater Site Inventory",
+    "provider": "Arizona Department of Water Resources",
+    "source_file": "Datasets/GWSI_ZIP_20260714/",
+    "crs": "EPSG:26912 for shapefile sites",
+    "variables": [
+      "well/site inventory",
+      "water-level elevation",
+      "depth to water",
+      "measurement source/method"
+    ],
+    "validation": "6,765 Phoenix rectangle inventory sites; 48,846 dated GWSI_WW_LEVELS rows, of which 46,360 contain at least one level value across 5,152 sites; elevations have unspecified datum and source/method/remark codes remain undecoded."
+  },
+  {
+    "dataset_id": "grace-jpl-rl063mv04-cri",
+    "kind": "water_storage",
+    "title": "JPL GRACE and GRACE-FO MASCON RL06.3Mv04 CRI",
+    "provider": "NASA/JPL PO.DAAC",
+    "source_file": "Datasets/A09. JPL GRACE.GRACE-FO.nc",
+    "temporal_coverage": "2002-04 through 2026-09",
+    "crs": "geographic lat/lon grid",
+    "native_resolution": "3-degree equal-area mascons; 0.5-degree display grid",
+    "variable": "lwe_thickness",
+    "units": "cm",
+    "doi": "10.5067/TEMSC-3JC634",
+    "validation": "NetCDF4/HDF5 metadata and dimensions inspected; coarse total storage context only"
+  },
+  {
+    "dataset_id": "prism-ppt-202610",
+    "kind": "rainfall",
+    "title": "PRISM monthly precipitation October 2026",
+    "provider": "PRISM Climate Group",
+    "source_file": "Datasets/a08.prism_ppt/prism_ppt_us_30s_202610.tif",
+    "temporal_coverage": "2026-10",
+    "crs": "NAD83 geographic (sidecar PRJ)",
+    "native_resolution": "30 arc-second (~800 m)",
+    "validation": "Rasterio verified NAD83 grid, monthly precipitation in mm, nodata and bounds. The Phoenix rectangle includes 18,511 valid native-cell centers; their unweighted arithmetic mean is 55.63 mm."
+  },
+  {
+    "dataset_id": "adwr-basin-context",
+    "kind": "groundwater_context",
+    "title": "Arizona groundwater basins and subbasins",
+    "provider": "ADWR source URL not retained in local files",
+    "source_file": "Datasets/ADWR_Groundwater_Subbasin.geojson; Datasets/Groundwater_Basin.geojson",
+    "crs": "CRS84",
+    "validation": "8 basin and 14 subbasin geometries intersect documented Phoenix study rectangle and are served as clipped regional context."
+  }
+]
