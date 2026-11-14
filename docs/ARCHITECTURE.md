@@ -7,7 +7,8 @@ At the initial audit, the workspace had no application source code. PIEZO uses a
 - `backend/`: FastAPI API, catalog services and reproducible processing scripts.
 - `frontend/`: React, Vite, TypeScript, MapLibre and charts.
 - `data/manifests/`: source and processing manifests.
-- `data/interim/`, `data/processed/`: generated products only.
+- `data/interim/`, `data/processed/`: local generated products only; ignored by Git.
+- `data/runtime/processed/`: curated, tracked lightweight deployment products; the large Frame 71 NISAR COGs are excluded and stored in public Cloudflare R2.
 - `docs/`: inventory, evidence, methods, limitations and implementation tracker.
 - `Datasets/`: supplied original files; never modified by processing.
 
@@ -26,7 +27,7 @@ FastAPI (health, catalog, NISAR, groundwater, context, facilities, evidence)
 React/Vite + MapLibre + chart components
 ```
 
-File-based catalogs are appropriate for this local MVP; PostGIS is not justified until concurrent edits, larger normalized queries or deployment requirements appear. Rasterio and supporting Python dependencies are installed in the project `.venv`; scripts write local COG, GeoTIFF, GeoJSON and JSON derivatives. Do not send original multi-gigabyte HDF5 files to browsers.
+File-based catalogs are appropriate for this local MVP; PostGIS is not justified until concurrent edits, larger normalized queries or deployment requirements appear. Rasterio and supporting Python dependencies are installed in the project `.venv`; scripts write local COG, GeoTIFF, GeoJSON and JSON derivatives. The Render Free service serves committed lightweight products and reads the two R2-hosted NISAR COGs with GDAL `/vsicurl/` range requests for pixel samples. Do not send original multi-gigabyte HDF5 files to browsers.
 
 ## Frontend sections
 

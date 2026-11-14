@@ -1,0 +1,77 @@
+{
+  "study_area": "Phoenix metropolitan region, Arizona",
+  "format_version": 1,
+  "local_products": [
+    {
+      "key": "groundwater/phoenix_groundwater.json",
+      "bytes": 4236207,
+      "sha256": "a5ac1fd7dfa8a456355164109f22d2a76d414cf36bbd0fe16d85072cfe210e21"
+    },
+    {
+      "key": "groundwater/adwr_gwsi_phoenix.json",
+      "bytes": 12137739,
+      "sha256": "ad1ba1ebe6f47bd12d7523f668b8486c4a4c2be3ff168e3c417e5afdbb3ef946"
+    },
+    {
+      "key": "groundwater/adwr_gwsi_phoenix.geojson",
+      "bytes": 2654676,
+      "sha256": "80412d9b8ade3f7770276e7228eecf828cf53df8118381401d2de92d34657266"
+    },
+    {
+      "key": "context/phoenix_basin_boundaries.geojson",
+      "bytes": 1358104,
+      "sha256": "2ce45ee84526fc7c4028c1a016d5c8d1f81bcafa19e615273b71af1b26dd3e71"
+    },
+    {
+      "key": "grace/phoenix_mascon_series.json",
+      "bytes": 25460,
+      "sha256": "56e855fe09d9f42e930146ced713dbdf6d31030f9576eb4082d2f6bef7ec7e75"
+    },
+    {
+      "key": "prism/prism_oct2026_phoenix_cog.tif",
+      "bytes": 88810,
+      "sha256": "525e458ee235ff1726d89595a4c152f7830785c1cd65fec9e8eecb4f206defe3"
+    },
+    {
+      "key": "prism/prism_oct2026_quicklook.png",
+      "bytes": 15340,
+      "sha256": "3c430c199cf73c3ba0cac2da41365615ea0225950f858bd4f7e635a0adae2225"
+    },
+    {
+      "key": "nisar/frame71_hhhh_manifest.json",
+      "bytes": 2409,
+      "sha256": "bac4166ada2c4d698c569b98a37faf375ea67f19afc3be6c5a46e0e4687c171e"
+    },
+    {
+      "key": "nisar/frame71_hhhh_quicklook.png",
+      "bytes": 8429085,
+      "sha256": "ad96075d34d121c6cd05fc391dfd19f260ea78ec5c7a201bc7e648abd8443847"
+    },
+    {
+      "key": "nisar/frame71_hvhv_manifest.json",
+      "bytes": 2408,
+      "sha256": "6fa298f7cc0d653eb39ee63bcd00303e7ec1980fd226fd58341c0fbf5b39a618"
+    },
+    {
+      "key": "nisar/frame71_hvhv_quicklook.png",
+      "bytes": 8077856,
+      "sha256": "95e29d01576849336eab8b3314ff505006337e3f5d990213128623dd2176637c"
+    }
+  ],
+  "r2_products": [
+    {
+      "key": "nisar/frame71_hhhh_phoenix_cog.tif",
+      "bytes": 216138296,
+      "sha256": "59b257005e576a8f564e330e205ee90f4cd8cb185e7c65785cca896edbcf2973"
+    },
+    {
+      "key": "nisar/frame71_hvhv_phoenix_cog.tif",
+      "bytes": 215578417,
+      "sha256": "db22f79a512e8e3b4adb9d75b08d3f1528582c55e57ac8dac5d93f556155ecde"
+    }
+  ],
+  "notes": [
+    "No raw satellite data is copied into this runtime bundle.",
+    "R2 COG objects must match the recorded object key and byte length; SHA-256 is provided for upload verification."
+  ]
+}

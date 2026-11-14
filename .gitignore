@@ -49,9 +49,14 @@ credentials*.json
 # Generated geospatial products; regenerate from local source data
 data/interim/
 data/processed/
+data/runtime/processed/nisar/*_phoenix_cog.tif
+data/runtime/processed/nisar/*_phoenix.tif
 
 # Raw source downloads (including multi-gigabyte NISAR/NetCDF/raster data)
 Datasets/
+*.h5
+*.hdf5
+*.nc
 
 # OS and local editor state
 .DS_Store

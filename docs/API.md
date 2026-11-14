@@ -6,7 +6,8 @@ FastAPI serves local catalog and derivative data under `/api`. Raster and image 
 
 | Method / path | Purpose |
 |---|---|
-| `GET /api/health` | Local service and catalog health. |
+| `GET /api/health` | Service liveness plus catalog and local-product status; reports readiness metadata and missing assets. |
+| `GET /api/ready` | Release readiness; returns 503 with missing assets or inaccessible/mismatched R2 COG objects. |
 | `GET /api/project/summary` | Dataset, scene, facility and groundwater counts/status. |
 | `GET /api/datasets` | Dataset source and validation catalog. |
 | `GET /api/layers` | Dynamic layer availability and derivative URLs. |
@@ -43,4 +44,4 @@ FastAPI serves local catalog and derivative data under `/api`. Raster and image 
 
 ## Derived files
 
-`GET /derived/{product_path}` serves only regular files resolved below `PIEZO_PROCESSED_ROOT` (defaults to `data/processed/`). Path traversal and missing files return 404. COGs and analysis rasters are file-backed derivatives; the API does not stream the raw multi-gigabyte HDF5 products. `PIEZO_DATA_ROOT` configures the catalog and manifest root. See [DEPLOYMENT.md](DEPLOYMENT.md) for hosting setup.
+`GET /derived/{product_path}` serves regular files resolved below `PIEZO_PROCESSED_ROOT` (defaults to `data/processed/`). The two known Frame 71 NISAR COG names redirect to their public R2 objects when the files are not local; arbitrary paths cannot be used to access R2. Path traversal and missing files return 404. `/api/nisar/sample` reads a local COG or uses GDAL/Rasterio HTTP range reads against the configured R2 COG. It returns an explicit 503 if a configured remote COG cannot be read. The API never streams raw HDF5 products or generates substitute observations. `PIEZO_DATA_ROOT` configures catalog data, `PIEZO_PROCESSED_ROOT` configures processed runtime products, and `PIEZO_R2_PUBLIC_BASE_URL` configures the public bucket root. See [DEPLOYMENT.md](DEPLOYMENT.md) for hosting setup.

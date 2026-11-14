@@ -41,6 +41,11 @@
 
 - [x] Add the regional evidence profile, source register, glossary, methods and limitations panel.
 - [ ] Review full keyboard/screen-reader behavior and responsive map controls.
-- [x] Run backend tests and frontend production build; 10 tests pass.
+- [x] Run backend tests (18 passing), frontend tests (4 passing) and production build.
+- [x] Prepare Render Free Blueprint without a persistent disk and split lean API dependencies from local scientific processing dependencies.
+- [x] Curate the tracked Phoenix runtime bundle (35 MiB); exclude large NISAR COGs, raw satellite data and duplicate analysis rasters from Git.
+- [x] Add R2 COG URL redirects, remote Rasterio pixel reads, SHA-256/size inventory, explicit readiness checks and frontend request-failure messages.
+- [x] Document Cloudflare R2, Render Free and Pages setup with all manual environment variables.
+- [ ] Create the R2 bucket, upload/verify the two public NISAR COGs, then validate the deployed Render and Pages URLs.
 - [ ] Browser smoke/accessibility review; local HTTP requests are blocked by this environment’s socket policy.
 - [x] Document local startup and known data acquisition gaps.

@@ -5,16 +5,106 @@ import os
 from pathlib import Path
 from typing import Any
 from functools import lru_cache
+from urllib.error import HTTPError, URLError
+from urllib.request import Request, urlopen
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 
 ROOT = Path(__file__).resolve().parents[2]
 DATA_DIR = Path(os.getenv("PIEZO_DATA_ROOT", str(ROOT / "data"))).resolve()
 CATALOG_DIR = DATA_DIR / "catalog"
 PROCESSED_DIR = Path(os.getenv("PIEZO_PROCESSED_ROOT", str(DATA_DIR / "processed"))).resolve()
 MANIFEST_DIR = Path(os.getenv("PIEZO_MANIFEST_ROOT", str(DATA_DIR / "manifests"))).resolve()
+R2_PUBLIC_BASE_URL = os.getenv("PIEZO_R2_PUBLIC_BASE_URL", "").rstrip("/")
+
+NISAR_CHANNELS = ("HHHH", "HVHV")
+
+
+def nisar_cog_name(channel: str) -> str:
+    return f"frame71_{channel.lower()}_phoenix_cog.tif"
+
+
+def local_nisar_cog(channel: str) -> Path:
+    return PROCESSED_DIR / "nisar" / nisar_cog_name(channel)
+
+
+def nisar_cog_url(channel: str) -> str | None:
+    if not R2_PUBLIC_BASE_URL:
+        return None
+    return f"{R2_PUBLIC_BASE_URL}/nisar/{nisar_cog_name(channel)}"
+
+
+def nisar_cog_available(channel: str) -> bool:
+    return local_nisar_cog(channel).is_file() or nisar_cog_url(channel) is not None
+
+
+def data_readiness(verify_remote_cogs: bool = False) -> dict[str, Any]:
+    """Check the real catalog/runtime products without substituting sample data."""
+    required = {
+        "catalog/datasets.json": CATALOG_DIR / "datasets.json",
+        "catalog/facilities.json": CATALOG_DIR / "facilities.json",
+        "catalog/evidence.json": CATALOG_DIR / "evidence.json",
+        "catalog/water_disclosures.json": CATALOG_DIR / "water_disclosures.json",
+        "catalog/layers.json": CATALOG_DIR / "layers.json",
+        "runtime/asset_manifest.json": DATA_DIR / "runtime" / "asset_manifest.json",
+        "manifests/prism_oct2026_phoenix.json": MANIFEST_DIR / "prism_oct2026_phoenix.json",
+        "processed/groundwater/phoenix_groundwater.json": PROCESSED_DIR / "groundwater" / "phoenix_groundwater.json",
+        "processed/groundwater/adwr_gwsi_phoenix.json": PROCESSED_DIR / "groundwater" / "adwr_gwsi_phoenix.json",
+        "processed/groundwater/adwr_gwsi_phoenix.geojson": PROCESSED_DIR / "groundwater" / "adwr_gwsi_phoenix.geojson",
+        "processed/context/phoenix_basin_boundaries.geojson": PROCESSED_DIR / "context" / "phoenix_basin_boundaries.geojson",
+        "processed/grace/phoenix_mascon_series.json": PROCESSED_DIR / "grace" / "phoenix_mascon_series.json",
+        "processed/prism/prism_oct2026_quicklook.png": PROCESSED_DIR / "prism" / "prism_oct2026_quicklook.png",
+    }
+    for channel in NISAR_CHANNELS:
+        stem = f"frame71_{channel.lower()}"
+        required[f"processed/nisar/{stem}_manifest.json"] = PROCESSED_DIR / "nisar" / f"{stem}_manifest.json"
+        required[f"processed/nisar/{stem}_quicklook.png"] = PROCESSED_DIR / "nisar" / f"{stem}_quicklook.png"
+    missing = [name for name, path in required.items() if not path.is_file()]
+    remote_cogs_configured = all(nisar_cog_url(channel) for channel in NISAR_CHANNELS)
+    missing_cogs = [nisar_cog_name(channel) for channel in NISAR_CHANNELS if not local_nisar_cog(channel).is_file() and not nisar_cog_url(channel)]
+    inaccessible_remote_cogs: list[str] = []
+    if verify_remote_cogs:
+        asset_manifest_path = DATA_DIR / "runtime" / "asset_manifest.json"
+        try:
+            asset_manifest = json.loads(asset_manifest_path.read_text(encoding="utf-8"))
+            expected_sizes = {item["key"]: int(item["bytes"]) for item in asset_manifest.get("r2_products", [])}
+        except (OSError, ValueError, KeyError, TypeError):
+            expected_sizes = {}
+        for channel in NISAR_CHANNELS:
+            if local_nisar_cog(channel).is_file():
+                continue
+            remote_url = nisar_cog_url(channel)
+            if not remote_url:
+                inaccessible_remote_cogs.append(nisar_cog_name(channel))
+                continue
+            try:
+                with urlopen(Request(remote_url, method="HEAD"), timeout=8) as response:
+                    actual_size = response.headers.get("Content-Length")
+                    expected_size = expected_sizes.get(f"nisar/{nisar_cog_name(channel)}")
+                    if response.status != 200 or expected_size is None or actual_size is None or int(actual_size) != expected_size:
+                        inaccessible_remote_cogs.append(nisar_cog_name(channel))
+            except (ValueError, TypeError):
+                inaccessible_remote_cogs.append(nisar_cog_name(channel))
+            except (HTTPError, URLError, TimeoutError, OSError):
+                inaccessible_remote_cogs.append(nisar_cog_name(channel))
+    components = {
+        "catalog": "available" if not any(name.startswith("catalog/") for name in missing) else "unavailable",
+        "nisar": "available" if not any("nisar/" in name for name in missing) and not missing_cogs and not inaccessible_remote_cogs else "unavailable",
+        "groundwater": "available" if not any("groundwater/" in name for name in missing) else "unavailable",
+        "rainfall": "available" if not any(name.startswith("manifests/prism") or "processed/prism/" in name for name in missing) else "unavailable",
+        "water_storage": "available" if "processed/grace/phoenix_mascon_series.json" not in missing else "unavailable",
+        "basin_context": "available" if "processed/context/phoenix_basin_boundaries.geojson" not in missing else "unavailable",
+    }
+    return {
+        "ready": not missing and not missing_cogs and not inaccessible_remote_cogs,
+        "components": components,
+        "missing_assets": missing,
+        "missing_nisar_cogs": missing_cogs,
+        "inaccessible_r2_cogs": inaccessible_remote_cogs,
+        "r2_configured": remote_cogs_configured,
+    }
 
 
 def read_json(name: str, default: Any) -> Any:
@@ -49,8 +139,22 @@ app.add_middleware(
 
 @app.get("/api/health")
 def health() -> dict[str, Any]:
+    readiness = data_readiness()
     datasets = read_json("datasets.json", [])
-    return {"status": "ok", "catalog_available": bool(datasets), "dataset_records": len(datasets)}
+    return {
+        "status": "ok",
+        "ready": readiness["ready"],
+        "catalog_available": readiness["components"]["catalog"] == "available" and bool(datasets),
+        "dataset_records": len(datasets),
+        **readiness,
+    }
+
+
+@app.get("/api/ready")
+def ready() -> JSONResponse:
+    readiness = data_readiness(verify_remote_cogs=True)
+    status_code = 200 if readiness["ready"] else 503
+    return JSONResponse({"status": "ready" if readiness["ready"] else "degraded", **readiness}, status_code=status_code)
 
 
 @app.get("/api/project/summary")
@@ -62,7 +166,6 @@ def project_summary() -> dict[str, Any]:
     adwr_groundwater = read_adwr_groundwater()
     prism_manifest = MANIFEST_DIR / "prism_oct2026_phoenix.json"
     grace_series = PROCESSED_DIR / "grace" / "phoenix_mascon_series.json"
-    nisar_product = PROCESSED_DIR / "nisar" / "frame71_hhhh_phoenix_cog.tif"
     return {
         "project": "PIEZO",
         "study_area": "Phoenix metropolitan region, Arizona",
@@ -79,8 +182,8 @@ def project_summary() -> dict[str, Any]:
         "adwr_gwsi_measurement_table_rows": adwr_groundwater["metadata"]["measurement_rows_for_phoenix_sites"] if adwr_groundwater else 0,
         "temporal_change_available": False,
         "availability": {
-            "nisar": "available" if nisar_product.exists() else "source available; derived map products pending",
-        "groundwater": "available" if groundwater and adwr_groundwater else "partially_available" if groundwater or adwr_groundwater else "source available; normalized API layer pending",
+            "nisar": "available" if nisar_cog_available("HHHH") and (PROCESSED_DIR / "nisar" / "frame71_hhhh_manifest.json").is_file() else "source available; derived products or R2 COG configuration pending",
+            "groundwater": "available" if groundwater and adwr_groundwater else "partially_available" if groundwater or adwr_groundwater else "source available; normalized API layer pending",
             "rainfall": "available" if prism_manifest.exists() else "source available; raster processing pending",
             "water_storage": "available" if grace_series.exists() else "source available; coarse regional context pending",
             "facilities": f"partially sourced; {sum(1 for row in facilities if row.get('latitude') is not None and row.get('longitude') is not None)} source-published coordinate records of {len(facilities)} directory entries",
@@ -99,7 +202,7 @@ def layers() -> list[dict[str, Any]]:
     for row in layer_rows:
         if row.get("id") == "nisar-gcov":
             manifest_path = PROCESSED_DIR / "nisar" / "frame71_hhhh_manifest.json"
-            row["available"] = manifest_path.exists()
+            row["available"] = manifest_path.is_file() and nisar_cog_available("HHHH")
             if row["available"]:
                 row["status"] = "frame 71 Frequency A HHHH and HVHV crops processed"
                 manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
@@ -109,9 +212,9 @@ def layers() -> list[dict[str, Any]]:
             channel_layers = []
             for term in ("HHHH", "HVHV"):
                 channel_manifest = PROCESSED_DIR / "nisar" / f"frame71_{term.lower()}_manifest.json"
-                if channel_manifest.exists():
+                if channel_manifest.is_file():
                     channel = json.loads(channel_manifest.read_text(encoding="utf-8"))
-                    channel_layers.append({"term": term, "frequency": channel["frequency"], "units": channel["units"], "available": True, "image_url": "/derived/nisar/" + channel["outputs"]["quicklook_png"], "image_corners": channel["display_corners_lonlat_nw_ne_se_sw"], "display_stretch": channel["display_stretch"]})
+                    channel_layers.append({"term": term, "frequency": channel["frequency"], "units": channel["units"], "available": nisar_cog_available(term), "image_url": "/derived/nisar/" + channel["outputs"]["quicklook_png"], "image_corners": channel["display_corners_lonlat_nw_ne_se_sw"], "display_stretch": channel["display_stretch"]})
                 else:
                     channel_layers.append({"term": term, "frequency": "frequencyA", "available": False})
             row["channel_layers"] = channel_layers
@@ -159,12 +262,19 @@ def layers() -> list[dict[str, Any]]:
 
 
 @app.get("/derived/{product_path:path}")
-def derived_product(product_path: str) -> FileResponse:
+def derived_product(product_path: str) -> FileResponse | RedirectResponse:
     base = PROCESSED_DIR.resolve()
     target = (base / product_path).resolve()
-    if base not in target.parents or not target.is_file():
+    if base not in target.parents:
         raise HTTPException(status_code=404, detail="Derived product not found")
-    return FileResponse(target)
+    if target.is_file():
+        return FileResponse(target)
+    # Only the two known Phoenix COG objects may redirect to the public R2 bucket.
+    allowed_r2_cogs = {f"nisar/{nisar_cog_name(channel)}" for channel in NISAR_CHANNELS}
+    if product_path.replace("\\", "/") in allowed_r2_cogs and R2_PUBLIC_BASE_URL:
+        channel = "HHHH" if "hhhh" in product_path.lower() else "HVHV"
+        return RedirectResponse(nisar_cog_url(channel), status_code=302)  # type: ignore[arg-type]
+    raise HTTPException(status_code=404, detail="Derived product not found in the local runtime bundle or configured R2 bucket")
 
 
 @app.get("/api/nisar/scenes")
@@ -181,7 +291,7 @@ def nisar_channels(scene_id: str) -> dict[str, Any]:
     if scene_id == "frame71-20261028":
         for channel in channels:
             stem = f"frame71_{channel['term'].lower()}"
-            if channel["frequency"] in {"frequencyA", "A"} and (PROCESSED_DIR / "nisar" / f"{stem}_phoenix_cog.tif").exists():
+            if channel["frequency"] in {"frequencyA", "A"} and nisar_cog_available(channel["term"]):
                 channel["status"] = "processed"
                 channel["frequency"] = "frequencyA"
                 channel["analysis_raster"] = f"/derived/nisar/{stem}_phoenix_cog.tif"
@@ -193,22 +303,35 @@ def nisar_channels(scene_id: str) -> dict[str, Any]:
 @app.get("/api/nisar/sample")
 def nisar_sample(longitude: float, latitude: float, channel: str = Query(default="HHHH", pattern="^(HHHH|HVHV)$")) -> dict[str, Any]:
     import rasterio
+    from rasterio.errors import RasterioError
     from rasterio.transform import rowcol
     from rasterio.warp import transform
 
-    path = PROCESSED_DIR / "nisar" / f"frame71_{channel.lower()}_phoenix_cog.tif"
-    if not path.exists():
+    path: str | Path = local_nisar_cog(channel)
+    if not Path(path).is_file():
+        remote_url = nisar_cog_url(channel)
+        if remote_url:
+            path = f"/vsicurl/{remote_url}"
+    if not Path(path).is_file() and not str(path).startswith("/vsicurl/"):
         raise HTTPException(status_code=404, detail="Selected channel has not been processed")
-    with rasterio.open(path) as raster:
-        x, y = transform("EPSG:4326", raster.crs, [longitude], [latitude])
-        row, col = rowcol(raster.transform, x[0], y[0])
-        if row < 0 or col < 0 or row >= raster.height or col >= raster.width:
-            raise HTTPException(status_code=404, detail="Coordinate is outside the Phoenix crop")
-        value = float(raster.read(1, window=((row, row + 1), (col, col + 1)))[0, 0])
-        mask = int(raster.read_masks(1, window=((row, row + 1), (col, col + 1)))[0, 0])
-        if mask == 0:
-            return {"availability": "masked", "longitude": longitude, "latitude": latitude, "channel": channel, "frequency": "frequencyA", "units": "1", "value": None, "message": "The source mask marks this pixel invalid."}
-        return {"availability": "available", "longitude": longitude, "latitude": latitude, "channel": channel, "frequency": "frequencyA", "units": "1", "value": value, "scene_id": "frame71-20261028", "acquisition_date": "2026-10-28", "interpretation": "Source GCOV covariance term; not a groundwater measurement."}
+    try:
+        with rasterio.Env(GDAL_DISABLE_READDIR_ON_OPEN="EMPTY_DIR", CPL_VSIL_CURL_ALLOWED_EXTENSIONS=".tif", GDAL_HTTP_MULTIRANGE="YES"):
+            with rasterio.open(path) as raster:
+                x, y = transform("EPSG:4326", raster.crs, [longitude], [latitude])
+                row, col = rowcol(raster.transform, x[0], y[0])
+                if row < 0 or col < 0 or row >= raster.height or col >= raster.width:
+                    raise HTTPException(status_code=404, detail="Coordinate is outside the Phoenix crop")
+                value = float(raster.read(1, window=((row, row + 1), (col, col + 1)))[0, 0])
+                mask = int(raster.read_masks(1, window=((row, row + 1), (col, col + 1)))[0, 0])
+                if mask == 0:
+                    return {"availability": "masked", "longitude": longitude, "latitude": latitude, "channel": channel, "frequency": "frequencyA", "units": "1", "value": None, "message": "The source mask marks this pixel invalid."}
+                return {"availability": "available", "longitude": longitude, "latitude": latitude, "channel": channel, "frequency": "frequencyA", "units": "1", "value": value, "scene_id": "frame71-20261028", "acquisition_date": "2026-10-28", "interpretation": "Source GCOV covariance term; not a groundwater measurement."}
+    except HTTPException:
+        raise
+    except (RasterioError, OSError, RuntimeError) as exc:
+        if str(path).startswith("/vsicurl/"):
+            raise HTTPException(status_code=503, detail="NISAR COG is configured in R2 but could not be read. Verify the object key, public access and byte-range support.") from exc
+        raise
 
 
 @app.get("/api/groundwater/stations")

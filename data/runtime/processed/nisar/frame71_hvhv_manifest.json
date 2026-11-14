@@ -1,0 +1,92 @@
+{
+  "source_file": "Datasets/NISAR_L2_PR_GCOV_034_056_D_071_4005_DHDH_A_20261028T021535_20261028T021610_P05036_N_F_J_001.h5",
+  "source_granule": "NISAR_L2_PR_GCOV_034_056_D_071_4005_DHDH_A_20261028T021535_20261028T021610_P05036_N_F_J_001",
+  "source_sha256": null,
+  "product_version": "1.0.20",
+  "crid": "P05036",
+  "acquisition_start_utc": "2026-10-28T02:15:35.000000000",
+  "acquisition_end_utc": "2026-10-28T02:16:10.999342105",
+  "orbit_direction": "Descending",
+  "track": 56,
+  "frame": 71,
+  "channel": "HVHV",
+  "frequency": "frequencyA",
+  "channel_description": "Covariance between HV and HV",
+  "units": "1",
+  "source_crs": "EPSG:32612",
+  "source_shape": [
+    34632,
+    35136
+  ],
+  "source_pixel_spacing_m": [
+    10.0,
+    -10.0
+  ],
+  "source_window": {
+    "row_start": 23209,
+    "row_end_exclusive": 33329,
+    "col_start": 4494,
+    "col_end_exclusive": 18044
+  },
+  "output_shape": [
+    10120,
+    13550
+  ],
+  "output_bounds_source_crs": [
+    332220.0,
+    3673510.0,
+    467720.0,
+    3774710.0
+  ],
+  "quicklook_shape": [
+    3059,
+    4096
+  ],
+  "display_corners_lonlat_nw_ne_se_sw": [
+    [
+      -112.81884123574343,
+      34.099754865555255
+    ],
+    [
+      -111.35001019725824,
+      34.1127239859679
+    ],
+    [
+      -111.34633425117349,
+      33.19997528247888
+    ],
+    [
+      -112.7997512045319,
+      33.1874438709397
+    ]
+  ],
+  "valid_pixel_count": 52657359,
+  "valid_fraction": 0.3840071102489681,
+  "valid_range": [
+    2.4821143597364426e-05,
+    701.25
+  ],
+  "display_stretch": {
+    "type": "linear percent clip",
+    "percentiles": [
+      2,
+      98
+    ],
+    "minimum": 0.003413945436477661,
+    "maximum": 0.09937763214111328,
+    "input_units": "1"
+  },
+  "mask_rule": "finite channel value, GCOV mask > 0 and != 255, and pixel center inside the projected/densified Phoenix study rectangle",
+  "outputs": {
+    "analysis_geotiff": "frame71_hvhv_phoenix.tif",
+    "cog": "frame71_hvhv_phoenix_cog.tif",
+    "quicklook_png": "frame71_hvhv_quicklook.png"
+  },
+  "created_utc": "2026-11-14T18:19:30.703620+00:00",
+  "python": "3.11.0",
+  "warnings": [
+    "Display quicklook is stretched and not quantitative.",
+    "Single acquisition date; this output does not support temporal change detection.",
+    "GCOV is not a direct groundwater measurement."
+  ]
+}

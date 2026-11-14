@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 from fastapi import HTTPException
 
+from backend.app import main as api_module
 from backend.app.main import (
     app,
     adwr_sites_geojson,
@@ -20,6 +22,7 @@ from backend.app.main import (
     read_json,
     groundwater_stations,
     health,
+    ready,
     layers,
     groundwater_observations,
     nisar_channels,
@@ -34,15 +37,21 @@ ROOT = Path(__file__).resolve().parents[2]
 def test_api_openapi_registers_core_request_paths() -> None:
     paths = set(app.openapi()["paths"])
     assert {
-        "/api/health", "/api/project/summary", "/api/layers", "/api/nisar/scenes",
-        "/api/nisar/sample", "/api/groundwater/stations", "/api/groundwater/stations.geojson",
+        "/api/health", "/api/ready", "/api/project/summary", "/api/datasets", "/api/layers", "/api/evidence/phoenix", "/api/nisar/scenes",
+        "/api/nisar/scenes/{scene_id}/channels", "/api/nisar/sample", "/api/groundwater/stations", "/api/groundwater/stations/{station_id}/observations", "/api/groundwater/stations.geojson",
         "/api/groundwater/adwr-sites.geojson", "/api/context/basins.geojson", "/api/rainfall/series",
-        "/api/water-storage/series", "/api/facilities", "/api/facilities/summary", "/api/evidence/phoenix",
+        "/api/water-storage/series", "/api/facilities", "/api/facilities/summary", "/api/facilities/{facility_id}", "/api/facilities/{facility_id}/water-disclosures",
     }.issubset(paths)
 
 
 def test_health_and_catalog_functions_reflect_real_catalog() -> None:
-    assert health()["catalog_available"] is True
+    status = health()
+    assert status["catalog_available"] is True
+    assert status["ready"] is True
+    assert status["missing_assets"] == []
+    ready_response = ready()
+    assert json.loads(ready_response.body)["status"] == "ready"
+    assert ready_response.status_code == 200
     rows = datasets()
     assert len(rows) >= 5
     assert {row["scene_id"] for row in rows if row.get("kind") == "nisar_gcov"} == {"frame71-20261028", "frame72-20261028"}
@@ -127,3 +136,124 @@ def test_derived_product_route_rejects_missing_files_and_traversal() -> None:
         with pytest.raises(HTTPException) as exc:
             derived_product(path)
         assert exc.value.status_code == 404
+
+
+def test_curated_runtime_bundle_is_small_and_excludes_large_nisar_cogs() -> None:
+    runtime = ROOT / "data" / "runtime"
+    manifest = json.loads((runtime / "asset_manifest.json").read_text(encoding="utf-8"))
+    assert manifest["study_area"] == "Phoenix metropolitan region, Arizona"
+    assert len(manifest["local_products"]) == 11
+    assert {item["key"] for item in manifest["r2_products"]} == {
+        "nisar/frame71_hhhh_phoenix_cog.tif",
+        "nisar/frame71_hvhv_phoenix_cog.tif",
+    }
+    assert all(item["sha256"] and item["bytes"] > 100_000_000 for item in manifest["r2_products"])
+    assert not list((runtime / "processed" / "nisar").glob("*_phoenix_cog.tif"))
+    assert sum(path.stat().st_size for path in (runtime / "processed").rglob("*") if path.is_file()) < 50 * 1024 * 1024
+
+
+def test_render_blueprint_uses_free_plan_without_disk() -> None:
+    blueprint = (ROOT / "render.yaml").read_text(encoding="utf-8")
+    assert "plan: free" in blueprint
+    assert "disk:" not in blueprint
+    assert "data/runtime/processed" in blueprint
+    assert "backend/requirements-render.txt" in blueprint
+    assert "PIEZO_R2_PUBLIC_BASE_URL" in blueprint
+
+
+def test_curated_runtime_products_drive_existing_endpoints(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(api_module, "PROCESSED_DIR", ROOT / "data" / "runtime" / "processed")
+    monkeypatch.setattr(api_module, "R2_PUBLIC_BASE_URL", "https://piezo-assets.example.test")
+    status = health()
+    assert status["ready"] is True
+    layer_rows = {row["id"]: row for row in layers()}
+    assert layer_rows["nisar-gcov"]["available"] is True
+    assert [item["available"] for item in layer_rows["nisar-gcov"]["channel_layers"]] == [True, True]
+    assert len(adwr_sites_geojson()["features"]) == 6765
+    assert len(basin_context_geojson()["features"]) == 22
+    assert rainfall_series()["availability"] == "available"
+    assert water_storage_series()["availability"] == "available"
+
+
+def test_missing_runtime_products_make_readiness_explicit(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    monkeypatch.setattr(api_module, "PROCESSED_DIR", tmp_path / "empty-processed")
+    monkeypatch.setattr(api_module, "R2_PUBLIC_BASE_URL", "")
+    status = health()
+    assert status["status"] == "ok"
+    assert status["ready"] is False
+    assert status["components"]["groundwater"] == "unavailable"
+    ready_response = ready()
+    assert json.loads(ready_response.body)["status"] == "degraded"
+    assert ready_response.status_code == 503
+
+
+def test_nisar_cog_route_redirects_only_known_remote_assets(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    monkeypatch.setattr(api_module, "PROCESSED_DIR", tmp_path / "processed")
+    monkeypatch.setattr(api_module, "R2_PUBLIC_BASE_URL", "https://piezo-assets.example.test")
+    response = derived_product("nisar/frame71_hhhh_phoenix_cog.tif")
+    assert response.status_code == 302
+    assert response.headers["location"] == "https://piezo-assets.example.test/nisar/frame71_hhhh_phoenix_cog.tif"
+    with pytest.raises(HTTPException) as exc:
+        derived_product("nisar/other_cog.tif")
+    assert exc.value.status_code == 404
+
+
+def test_readiness_probes_r2_cog_objects_and_checks_size(monkeypatch: pytest.MonkeyPatch) -> None:
+    from contextlib import contextmanager
+
+    manifest = json.loads((ROOT / "data" / "runtime" / "asset_manifest.json").read_text(encoding="utf-8"))
+    sizes = {item["key"]: item["bytes"] for item in manifest["r2_products"]}
+    requested: list[str] = []
+
+    @contextmanager
+    def fake_urlopen(request, timeout):
+        requested.append(request.full_url)
+        key = request.full_url.split(".test/", 1)[1]
+        yield SimpleNamespace(status=200, headers={"Content-Length": str(sizes[key])})
+
+    monkeypatch.setattr(api_module, "PROCESSED_DIR", ROOT / "data" / "runtime" / "processed")
+    monkeypatch.setattr(api_module, "R2_PUBLIC_BASE_URL", "https://piezo-assets.example.test")
+    monkeypatch.setattr(api_module, "urlopen", fake_urlopen)
+    response = ready()
+    assert response.status_code == 200
+    assert json.loads(response.body)["inaccessible_r2_cogs"] == []
+    assert len(requested) == 2
+
+
+def test_nisar_pixel_sampling_reads_configured_remote_cog(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    import numpy as np
+    import rasterio
+    from affine import Affine
+    from rasterio.crs import CRS
+
+    opened: list[str] = []
+
+    class RemoteRaster:
+        crs = CRS.from_epsg(4326)
+        transform = Affine.translation(-180, 90) @ Affine.scale(36, -18)
+        width = 20
+        height = 20
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+        def read(self, *args, **kwargs):
+            return np.array([[0.125]], dtype=np.float32)
+
+        def read_masks(self, *args, **kwargs):
+            return np.array([[255]], dtype=np.uint8)
+
+    def fake_open(path):
+        opened.append(str(path))
+        return RemoteRaster()
+
+    monkeypatch.setattr(api_module, "PROCESSED_DIR", tmp_path / "processed")
+    monkeypatch.setattr(api_module, "R2_PUBLIC_BASE_URL", "https://piezo-assets.example.test")
+    monkeypatch.setattr(rasterio, "open", fake_open)
+    result = nisar_sample(-112.074, 33.448, "HHHH")
+    assert result["availability"] == "available"
+    assert result["value"] == pytest.approx(0.125)
+    assert opened == ["/vsicurl/https://piezo-assets.example.test/nisar/frame71_hhhh_phoenix_cog.tif"]

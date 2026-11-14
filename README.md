@@ -67,4 +67,4 @@ Run the frontend search/filter regression tests from `frontend/` with `npm test`
 
 ## Deployment preparation
 
-See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for Cloudflare Pages and Render configuration, environment variables, processed-asset staging and remote release checks. The production site has not been deployed from this workspace; its real URL must pass the documented smoke checks before submission.
+See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for the zero-cost Cloudflare Pages + Render Free + R2 deployment, curated runtime bundle, environment variables, COG upload and release checks. A hosted release must still pass the R2 and API smoke checks before submission.
